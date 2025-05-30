@@ -1,0 +1,174 @@
+<script type="text/babel">
+  const { useState, useEffect } = React;
+
+  const App = () => {
+    const [messages, setMessages] = useState([{ sender: 'bot', text: 'Namaste! I\'m DigiMitra, your digital companion. Let\'s explore this amazing digital world together!' }]);
+    const [input, setInput] = useState('');
+    const [language, setLanguage] = useState('en');
+    const [isListening, setIsListening] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+
+    const speak = (text) => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+      window.speechSynthesis.speak(utterance);
+    };
+
+    const handleInput = async () => {
+      if (!input.trim()) return;
+      setMessages([...messages, { sender: 'user', text: input }]);
+      try {
+        const response = await fetch('http://localhost:5000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input, language })
+        });
+        const data = await response.json();
+        setMessages((prev) => [...prev, { sender: 'bot', text: data.response }]);
+        speak(data.response);
+      } catch (error) {
+        console.error('Error:', error);
+        setMessages((prev) => [...prev, { sender: 'bot', text: 'Oops, something went wrong! Please try again.' }]);
+      }
+      setInput('');
+    };
+
+    const handleQuickButton = async (query) => {
+      setMessages([...messages, { sender: 'user', text: query }]);
+      try {
+        const response = await fetch('http://localhost:5000/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: query, language })
+        });
+        const data = await response.json();
+        setMessages((prev) => [...prev, { sender: 'bot', text: data.response }]);
+        speak(data.response);
+      } catch (error) {
+        console.error('Error:', error);
+        setMessages((prev) => [...prev, { sender: 'bot', text: 'Oops, something went wrong! Please try again.' }]);
+      }
+    };
+
+    const startListening = () => {
+      setIsListening(true);
+      recognition.start();
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        handleInput();
+        setIsListening(false);
+      };
+      recognition.onend = () => setIsListening(false);
+    };
+
+    const toggleMinimize = () => {
+      setIsMinimized(!isMinimized);
+    };
+
+    return (
+      <div>
+        {/* Header */}
+        <header className="indian-motif py-10 text-center">
+          <h1 className="header-title">Digital Literacy Program</h1>
+          <p className="header-subtitle">Empowering Parents & Elders with DigiMitra</p>
+        </header>
+
+        {/* Main Content */}
+        <div className="container mx-auto p-6">
+          <section className="mb-10">
+            <h2 className="text-3xl font-bold text-center text-[#138808]">Welcome to Your Digital Yatra</h2>
+            <p className="text-lg mt-4 text-center">
+              Join DigiMitra, your digital friend, to explore the internet with ease and confidence. Learn to connect, pay bills, and stay safe online – all with a touch of Indian warmth!
+            </p>
+          </section>
+
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold text-[#ff9933]">Quick Tech Tips for Parents</h3>
+              <p className="mt-2">Learn how to manage your kids’ digital lives with simple guides on safe apps, screen time, and more.</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-bold text-[#ff9933]">Digital Basics for Elders</h3>
+              <p className="mt-2">From WhatsApp to online payments, we make technology as simple as brewing chai!</p>
+            </div>
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-3xl font-bold text-center text-[#138808]">Gyan Kendra: Our Digital Heroes</h2>
+            <p className="text-lg mt-4 text-center">
+              Read inspiring stories of elders embracing technology, from video calls with grandkids to online shopping!
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              <div className="bg-white p-4 rounded-lg shadow-lg">
+                <h4 className="text-xl font-bold">Aaji’s First Video Call</h4>
+                <p>Learn how 70-year-old Shanta Aaji connected with her family abroad using WhatsApp!</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-lg">
+                <h4 className="text-xl font-bold">Ramesh Uncle’s UPI Success</h4>
+                <p>Discover how Ramesh Uncle paid his bills online with confidence.</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-lg">
+                <h4 className="text-xl font-bold">Online Safety Pathshala</h4>
+                <p>Tips to stay safe from scams and protect your information online.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Chatbot */}
+        {isMinimized ? (
+          <div className="chatbot-minimized" onClick={toggleMinimize}>
+            <span role="img" aria-label="DigiMitra Icon">🤖</span>
+          </div>
+        ) : (
+          <div className="chatbot-container">
+            <div className="chatbot-header">
+              <span>DigiMitra</span>
+              <div>
+                <span className="minimize-btn" onClick={toggleMinimize}>–</span>
+                <span className="close-btn" onClick={toggleMinimize}>✖</span>
+              </div>
+            </div>
+            <div className="chatbot-messages">
+              {messages.map((msg, index) => (
+                <div key={index} className={msg.sender === 'bot' ? 'text-left p-2' : 'text-right p-2 text-[#138808]'}>
+                  {msg.text}
+                </div>
+              ))}
+            </div>
+            <div className="quick-buttons flex flex-wrap justify-center">
+              <button onClick={() => handleQuickButton('What is a browser?')}>Digital Basics</button>
+              <button onClick={() => handleQuickButton('How to use WhatsApp?')}>Tutorials</button>
+              <button onClick={() => handleQuickButton('Wi-Fi not working')}>Get Help</button>
+              <button onClick={() => handleQuickButton('Online safety')}>Safety Tips</button>
+            </div>
+            <div className="chatbot-input">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleInput()}
+                placeholder="Ask DigiMitra..."
+              />
+              <button onClick={startListening} disabled={isListening}>
+                {isListening ? '🎙️ Listening...' : '🎙️ Speak'}
+              </button>
+            </div>
+            <div className="p-2">
+              <select onChange={(e) => setLanguage(e.target.value)} value={language} className="w-full p-2 rounded">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  ReactDOM.render(<App />, document.getElementById('root'));
+</script>

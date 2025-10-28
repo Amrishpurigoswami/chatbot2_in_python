@@ -21,7 +21,3 @@ DigiMitra is a bilingual (English/Hindi) chatbot designed to empower parents and
 - Node.js (optional, for local development)
 - A modern web browser
 
-### Backend Setup
-1. Navigate to the `backend` directory:
-   ```bash
-   cd backend
